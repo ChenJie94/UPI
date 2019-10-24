@@ -107,9 +107,6 @@ public class UnifyPayController {
         return orderId;
     }
 
-
-
-
     @Resource
     protected HttpServletRequest request;
     @Resource
@@ -788,7 +785,6 @@ public class UnifyPayController {
         }
         if (resultSting != null || resultSting.length() > 0) {
             JSONObject returnjson = JsonUtils.xmlToJson(resultSting.toString());
-       //     String listJsonStr = returnjson.getJSONObject("stream").getJSONObject("list").getJSONObject("row").toString();
             if (returnjson.getJSONObject("stream").toString().contains("list")) {
                 listJsonStr = returnjson.getJSONObject("stream").getJSONObject("list").getJSONObject("row").toString();
             } else {

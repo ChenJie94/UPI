@@ -1,0 +1,36 @@
+Manifest-Version: 1.0
+Class-Path: commons-lang3-3.5.jar commons-codec-1.10.jar spring-web-5.
+ 1.5.RELEASE.jar logback-classic-1.2.3.jar jackson-core-2.9.8.jar snak
+ eyaml-1.23.jar logback-core-1.2.3.jar okio-1.8.0.jar validation-api-2
+ .0.1.Final.jar jackson-module-parameter-names-2.9.8.jar okhttp-3.3.0.
+ jar jackson-datatype-jdk8-2.9.8.jar jce-jdk13-136.jar fastjson-1.2.22
+ .jar bcprov-jdk15on-1.54.jar spring-aop-5.1.5.RELEASE.jar xml-apis-1.
+ 4.01.jar jul-to-slf4j-1.7.25.jar commons-logging-1.0.3.jar spring-web
+ mvc-5.1.5.RELEASE.jar jboss-logging-3.3.2.Final.jar saaj-impl-1.5.0.j
+ ar mimepull-1.9.11.jar spring-beans-5.1.5.RELEASE.jar emp.jar jce.jar
+  jnet.jar jsse.jar jcert.jar payclient.jar log4j-1.2.17.jar commons-i
+ o-2.2.jar commons-lang-2.5.jar commons-codec-1.6.jar commons-logging-
+ 1.1.jar commons-httpclient-3.1-alpha1.jar hamcrest-core-1.3.jar jacks
+ on-databind-2.9.8.jar spring-boot-starter-tomcat-2.1.3.RELEASE.jar hi
+ bernate-validator-6.0.14.Final.jar spring-boot-autoconfigure-2.1.3.RE
+ LEASE.jar spring-boot-starter-json-2.1.3.RELEASE.jar javax.annotation
+ -api-1.3.2.jar spring-boot-starter-logging-2.1.3.RELEASE.jar log4j-to
+ -slf4j-2.11.2.jar jaxb-api-2.3.1.jar log4j-api-2.11.2.jar commons-htt
+ pclient-3.1-alpha1.jar javax.xml.soap-api-1.4.0.jar javax.activation-
+ api-1.2.0.jar stax-ex-1.8.jar tomcat-embed-websocket-9.0.16.jar sprin
+ g-xml-3.0.6.RELEASE.jar httpclient-4.5.3.jar spring-jcl-5.1.5.RELEASE
+ .jar itextpdf-5.5.8.jar mssql-jdbc-6.4.0.jre8.jar tomcat-embed-core-9
+ .0.16.jar spring-expression-5.1.5.RELEASE.jar commons-io-2.6.jar jaxw
+ s-api-2.3.1.jar junit-4.12.jar tomcat-embed-el-9.0.16.jar xpp3_min-1.
+ 1.4c.jar jackson-datatype-jsr310-2.9.8.jar classmate-1.4.0.jar dom4j-
+ 1.6.1.jar commons-lang-2.6.jar spring-core-5.1.5.RELEASE.jar slf4j-ap
+ i-1.7.25.jar spring-oxm-5.1.5.RELEASE.jar spring-boot-starter-2.1.3.R
+ ELEASE.jar spring-boot-2.1.3.RELEASE.jar spring-boot-starter-web-2.1.
+ 3.RELEASE.jar jackson-annotations-2.9.0.jar json-io-4.9.8.jar httpcor
+ e-4.4.11.jar xmlpull-1.1.3.1.jar jsoup-1.10.2.jar bcmail-jdk13-136.ja
+ r CNCBCryptoPkg.jar spring-context-5.1.5.RELEASE.jar spring-ws-core-3
+ .0.6.RELEASE.jar gson-2.7.jar spring-boot-starter-web-services-2.1.3.
+ RELEASE.jar xstream-1.4.10.jar
+Main-Class: com.example.pay.demo.DemoApplication
+
+

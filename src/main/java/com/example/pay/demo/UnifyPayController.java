@@ -6,7 +6,6 @@ import com.example.pay.acp.demo.DemoBase;
 import com.example.pay.acp.sdk.AcpService;
 import com.example.pay.acp.sdk.LogUtil;
 import com.example.pay.acp.sdk.SDKConfig;
-import com.example.pay.acp.sdk.SDKConstants;
 import com.example.pay.assembly.*;
 import com.example.pay.bean.AdjunctAccount;
 import com.example.pay.bean.StatusInformation;
@@ -16,18 +15,24 @@ import com.example.pay.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /*
  * @author: chenjie
@@ -107,7 +112,7 @@ public class UnifyPayController {
         return orderId;
     }
 
-    @Resource
+/*    @Resource
     protected HttpServletRequest request;
     @Resource
     protected HttpServletResponse resp;
@@ -120,7 +125,7 @@ public class UnifyPayController {
         System.out.println(txnAmt);
         Map<String, String> requestData = new HashMap<String, String>();
 
-        /***银联全渠道系统，产品参数，除了encoding自行选择外其他不需修改***/
+        *//***银联全渠道系统，产品参数，除了encoding自行选择外其他不需修改***//*
         requestData.put("version", DemoBase.version);   			      //版本号，全渠道默认值
         requestData.put("encoding", DemoBase.encoding); 	      //字符集编码，可以使用UTF-8,GBK两种方式
         requestData.put("signMethod", SDKConfig.getConfig().getSignMethod()); //签名方法
@@ -129,7 +134,7 @@ public class UnifyPayController {
         requestData.put("bizType", "000202");           			  //业务类型 000202: B2B
         requestData.put("channelType", "07");           			  //渠道类型 固定07
 
-        /***商户接入参数***/
+        *//***商户接入参数***//*
         requestData.put("merId", merId);    	          			  //商户号码，请改成自己申请的正式商户号或者open上注册得来的777测试商户号
         requestData.put("accessType", "0");             			  //接入类型，0：直连商户
         requestData.put("orderId",DemoBase.getOrderId());             //商户订单号，8-40位数字字母，不能含“-”或“_”，可以自行定制规则
@@ -171,7 +176,7 @@ public class UnifyPayController {
         //    查询、通知等接口解析时使用new String(Base64.decodeBase64(reqReserved), DemoBase.encoding);解base64后再对数据做后续解析。
 //		requestData.put("reqReserved", Base64.encodeBase64String("任意格式的信息都可以".toString().getBytes(DemoBase.encoding)));
 
-        /**请求参数设置完毕，以下对请求参数进行签名并生成html表单，将表单写入浏览器跳转打开银联页面**/
+        *//**请求参数设置完毕，以下对请求参数进行签名并生成html表单，将表单写入浏览器跳转打开银联页面**//*
         Map<String, String> reqData = AcpService.sign(requestData,DemoBase.encoding);  //报文中certId,signature的值是在signData方法中获取并自动赋值的，只要证书配置正确即可。
         String requestFrontUrl = SDKConfig.getConfig().getFrontRequestUrl();  //获取请求银联的前台地址：对应属性文件acp_sdk.properties文件中的acpsdk.frontTransUrl
         String html = AcpService.createAutoFormHtml(requestFrontUrl,reqData,DemoBase.encoding);   //生成自动跳转的Html表单
@@ -234,13 +239,13 @@ public class UnifyPayController {
         LogUtil.writeLog("FrontRcvResponse前台接收报文返回结束");
     }
 
-    /**
+    *//**
      * 获取请求参数中所有的信息
      * 当商户上送frontUrl或backUrl地址中带有参数信息的时候，
      * 这种方式会将url地址中的参数读到map中，会导多出来这些信息从而致验签失败，这个时候可以自行修改过滤掉url中的参数或者使用getAllRequestParamStream方法。
      * @param request
      * @return
-     */
+     *//*
     public static Map<String, String> getAllRequestParam(
             final HttpServletRequest request) {
         Map<String, String> res = new HashMap<String, String>();
@@ -258,7 +263,7 @@ public class UnifyPayController {
             }
         }
         return res;
-    }
+    }*/
 
 
     String errorInfo = "";
@@ -321,8 +326,6 @@ public class UnifyPayController {
             if (jsonFile != null) {
                 String textFile = jsonFile.getString("files");
                 fileMap.put("textFile", new File(textFile));
-                //    fileMap.put("X-SPDB-FilesMD5", Md5Utility.String2MD5(new File(textFile).getPath()));
-
             }
         }
         //生成秘钥对
@@ -342,7 +345,6 @@ public class UnifyPayController {
         if ("ECITIC".equals(Bankcode) || Bankcode.contains("ECITIC")) {
             //将json格式数据转成xml格式
             logger.info("调用中信银行接口");
-         //   String param = decryptStr;//JsonUtils.jsonToPrettyXml(jsonobject);
             String url = MySqlConfig.ecitic_url;
             Object ob = eciticPay(url, Interfacename, Flag,jsonobject);
             str = jsonobject.toJSONString(ob).toString();
@@ -363,7 +365,6 @@ public class UnifyPayController {
             }
         }else if("UNIONPAY".equals(Bankcode)|| Bankcode.contains("UNIONPAY")){
             logger.info("调用银联接口");
-         //   String url = MySqlConfig.spd_url;
             Object ob = unionPay(Interfacename, jsonobject, Flag);
             str = ob.toString();
         }
@@ -831,13 +832,13 @@ public class UnifyPayController {
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
 
-        }if ("btchAgncTranFileUpload".equals(interfacename) || interfacename.contains("btchAgncTranFileUpload")) {
+        }/*if ("btchAgncTranFileUpload".equals(interfacename) || interfacename.contains("btchAgncTranFileUpload")) {
             logger.info("访问浦发银行批量文件上传交易接口");
             urlStr = paramUrl + "/btchAgncTranFileUpload";
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
 
-        }if ("btchAgncTranQry".equals(interfacename) || interfacename.contains("btchAgncTranQry")) {
+        }*/if ("btchAgncTranQry".equals(interfacename) || interfacename.contains("btchAgncTranQry")) {
             logger.info("访问浦发银行批量代收付交易查询接口");
             urlStr = paramUrl + "/btchAgncTranQry";
             String jsonStr = JSON.toJSONString(jsonobject);
@@ -863,7 +864,7 @@ public class UnifyPayController {
 
 
     /**
-     * 浦发银行接口
+     * 浦发银行批量文件上传交易接口
      * @param interfacename
      * @param jsonobject
      * @param flag
@@ -882,7 +883,6 @@ public class UnifyPayController {
         return null;
     }
 }
-//123456github haha!! 单个文件提交
 
 
 

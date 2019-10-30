@@ -63,6 +63,7 @@ import java.util.Map;
  *                                代码无BUG!
  */
 @RestController
+//@EnableScheduling
 //@EnableConfigurationProperties(MyException.class)
 public class UnifyPayController {
     JSONObject json = new JSONObject();
@@ -88,6 +89,11 @@ public class UnifyPayController {
         } else {
             throw new Exception();
         }
+    }
+
+  //  @Scheduled(cron = "0/5 * * * * ?") 测试定时器
+    public void cron() {
+        System.out.println(new Date());
     }
 
     //生成8位随机数

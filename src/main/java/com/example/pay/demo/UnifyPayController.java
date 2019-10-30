@@ -111,7 +111,7 @@ public class UnifyPayController {
         }
         return orderId;
     }
-//git 提交
+//git 提交 没生效？
 /*    @Resource
     protected HttpServletRequest request;
     @Resource

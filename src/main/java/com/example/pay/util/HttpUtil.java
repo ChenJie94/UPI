@@ -17,7 +17,7 @@ import java.security.cert.X509Certificate;
 /**
  * http请求工具
  *HttpClientUtil
- * @author lsp
+ * @author 陈杰
  *2018年5月7日
  */
 public class HttpUtil {

@@ -3,21 +3,14 @@
  */
 package com.example.pay.util;
 
+import com.cedarsoftware.util.io.JsonObject;
+import okhttp3.*;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.ConnectionPool;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
-import com.cedarsoftware.util.io.JsonObject;
-
 /**
- * @author T-zhaoz2
- *
+ * HttpClientUtil
  */
 public class HttpClientUtil { 
 	

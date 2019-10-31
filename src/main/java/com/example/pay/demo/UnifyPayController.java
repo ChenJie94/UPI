@@ -117,7 +117,6 @@ public class UnifyPayController {
         }
         return orderId;
     }
-//git 提交 没生效？
 /*    @Resource
     protected HttpServletRequest request;
     @Resource
@@ -271,8 +270,12 @@ public class UnifyPayController {
         return res;
     }*/
 
-
-    String errorInfo = "";
+    /**
+     * 统一支付接口入口方法
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/UPI", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     public String unifyPay(HttpServletRequest request) throws Exception {
         String str = "";
@@ -287,15 +290,12 @@ public class UnifyPayController {
             upiParameterJson = new String(buff, 0, length);
             upiParameterJson = URLDecoder.decode(upiParameterJson, "UTF-8");
         }
-
-
         //将json字符串参数 转成 json对象
         JSONObject json = JSON.parseObject(upiParameterJson);
         //取json对象里面的具体参数值
         if (json == null || upiParameterJson.equals("")) {
             //自定义错误 "传入参数为空！"
             throw new MyException(20, "传入参数为空！");
-
 
         } else if (json.getString("bankCode") == null || json.getString("bankCode").equals("")) {
             //自定义错误 "未传入选择操作的银行！"
@@ -309,22 +309,22 @@ public class UnifyPayController {
                 Interfacename = json.getString("interfaceName").toString();
             }
         }
-      //  String Key = json.getString("aesEncodeKey").toString();
         String SessionID = json.getString("sessionID").toString();
-        if (json.containsKey("userName")||json.containsKey("payPwd")){
+
+        /*if (json.containsKey("userName")||json.containsKey("payPwd")){
             //自定义错误 "没有传入用户名和密码！" (暂时不开放)
          //   throw new MyException(22, "没有传入用户名和密码！");
-       /*     if(json.getString("userName") != null || !json.getString("userName").equals("")){
+            if(json.getString("userName") != null || !json.getString("userName").equals("")){
                 String UsernName = json.getString("userName").toString();
                 String PayPwd = json.getString("payPwd").toString();
             }else{
                 //自定义错误 "传入用户名和密码为空值" (暂时不开放)
                 //    throw new MyException(22, "传入用户名和密码为空值");
-            }*/
-        }
+            }
+        }*/
 
         String Flag = json.getString("flag").toString();
-    //    String privateKeyStr = json.getString("key").toString();
+
         String paramStr = json.getString("param").toString();
         Map<String, File> fileMap = new HashMap<>();
         if (json.containsKey("fileMap")) {
@@ -334,8 +334,11 @@ public class UnifyPayController {
                 fileMap.put("textFile", new File(textFile));
             }
         }
+        //将原本校验加解密的代码注释掉 （加密后的信息流经过http传输后会缺失顾启用加解密）
+        //  String Key = json.getString("aesEncodeKey").toString();
+        //    String privateKeyStr = json.getString("key").toString();
         //生成秘钥对
-    //    KeyPair keyPair = RSAUtil.getKeyPair();
+        //KeyPair keyPair = RSAUtil.getKeyPair();
         //  String privateKeyStr = RSAUtil.getPrivateKey(keyPair);//私钥
         //##############网络上传输的内容有Base64编码后的公钥 和 Base64编码后的公钥加密的内容     #################
         //===================服务端================
@@ -366,7 +369,7 @@ public class UnifyPayController {
                 str = ob.toString();
             }else{
                 Object ob = spdPay(url, Interfacename, jsonobject, Flag);
-                str = new String(ob.toString().getBytes("GBK"),"GBK");
+                str = new String(ob.toString().getBytes("UTF-8"),"UTF-8");
                 System.out.println(str);
             }
         }else if("UNIONPAY".equals(Bankcode)|| Bankcode.contains("UNIONPAY")){
@@ -433,13 +436,13 @@ public class UnifyPayController {
                 // 透传字段，查询、通知、对账文件中均会原样出现，如有需要请启用并修改自己希望透传的数据。
                 // 出现部分特殊字符时可能影响解析，请按下面建议的方式填写：
                 // 1. 如果能确定内容不会出现&={}[]"'等符号时，可以直接填写数据，建议的方法如下。
-//		requestData.put("reqReserved", "透传信息1|透传信息2|透传信息3");
+                //		requestData.put("reqReserved", "透传信息1|透传信息2|透传信息3");
                 // 2. 内容可能出现&={}[]"'符号时：
                 // 1) 如果需要对账文件里能显示，可将字符替换成全角＆＝｛｝【】“‘字符（自己写代码，此处不演示）；
                 // 2) 如果对账文件没有显示要求，可做一下base64（如下）。
                 //    注意控制数据长度，实际传输的数据长度不能超过1024位。
                 //    查询、通知等接口解析时使用new String(Base64.decodeBase64(reqReserved), DemoBase.encoding);解base64后再对数据做后续解析。
-//		requestData.put("reqReserved", Base64.encodeBase64String("任意格式的信息都可以".toString().getBytes(DemoBase.encoding)));
+                //		requestData.put("reqReserved", Base64.encodeBase64String("任意格式的信息都可以".toString().getBytes(DemoBase.encoding)));
 
                 /**请求参数设置完毕，以下对请求参数进行签名并生成html表单，将表单写入浏览器跳转打开银联页面**/
                 Map<String, String> reqData = AcpService.sign(requestData, DemoBase.encoding);  //报文中certId,signature的值是在signData方法中获取并自动赋值的，只要证书配置正确即可。
@@ -838,27 +841,24 @@ public class UnifyPayController {
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
 
-        }/*if ("btchAgncTranFileUpload".equals(interfacename) || interfacename.contains("btchAgncTranFileUpload")) {
-            logger.info("访问浦发银行批量文件上传交易接口");
-            urlStr = paramUrl + "/btchAgncTranFileUpload";
-            String jsonStr = JSON.toJSONString(jsonobject);
-            return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
-
-        }*/if ("btchAgncTranQry".equals(interfacename) || interfacename.contains("btchAgncTranQry")) {
+        }if ("btchAgncTranQry".equals(interfacename) || interfacename.contains("btchAgncTranQry")) {
             logger.info("访问浦发银行批量代收付交易查询接口");
             urlStr = paramUrl + "/btchAgncTranQry";
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
+
         }if ("btchAgncTranFileDownload".equals(interfacename) || interfacename.contains("btchAgncTranFileDownload")) {
             logger.info("访问浦发银行批量代收付API交易文件下载查询接口");
             urlStr = paramUrl + "/btchAgncTranFileDownload";
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
+
         }if("rcnclAplTran".equals(interfacename) || interfacename.contains("rcnclAplTran")){
             logger.info("访问浦发银行批量代收付API对账请求交易接口");
             urlStr = paramUrl + "/rcnclAplTran";
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag);
+
         }if ("rcnclRsltQryApl".equals(interfacename) || interfacename.contains("rcnclRsltQryApl")){
             logger.info("访问浦发银行批量代收付API对账结果查询下载请求交易接口");
             urlStr = paramUrl + "/rcnclRsltQryApl";
@@ -883,7 +883,6 @@ public class UnifyPayController {
             urlStr = paramUrl + "/btchAgncTranFileUpload";
             String jsonStr = JSON.toJSONString(jsonobject);
             return SPDBSignature.getSPDBSignature(urlStr, jsonStr, interfacename, flag, fileMap);
-
         }
 
         return null;

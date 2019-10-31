@@ -48,7 +48,6 @@ public class SPDBSignature {
 
     public static Object  getSPDBSignature(String urlStr , String content, String interfacename, String flag) {
         //请求报文体
-        //   String content = "{\"name\":\"zhangshan\"}";
         HashMap<String ,String> map= new  HashMap<String ,String>();
         //   HashMap<String ,String> filemap= new  HashMap<String ,String>();
         //X-SPDB-ClientID-Secret

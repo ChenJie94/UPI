@@ -10,21 +10,20 @@ import com.example.pay.assembly.*;
 import com.example.pay.bean.AdjunctAccount;
 import com.example.pay.bean.StatusInformation;
 import com.example.pay.bean.spdResult;
+import com.example.pay.cib.*;
 import com.example.pay.exception.MyException;
+import com.example.pay.util.DlFile;
+import com.example.pay.util.DlSettleFile;
 import com.example.pay.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
@@ -280,6 +279,8 @@ public class UnifyPayController {
     public String unifyPay(HttpServletRequest request) throws Exception {
         String str = "";
         String upiParameterJson = "";
+        String remote_ip=request.getRemoteAddr();
+
         StatusInformation information = new StatusInformation();
         //读取请求upi接口时传过来的参数
         InputStreamReader reader = new InputStreamReader(request.getInputStream(),"UTF-8");
@@ -376,6 +377,11 @@ public class UnifyPayController {
             logger.info("调用银联接口");
             Object ob = unionPay(Interfacename, jsonobject, Flag);
             str = ob.toString();
+        }else if("CIB".equals(Bankcode)|| Bankcode.contains("CIB")){
+            CibPayController cibPayController=new CibPayController();
+            logger.info("调用兴业银行接口");
+            Object ob = cibPayController.cibPay(remote_ip,Interfacename, jsonobject, Flag);
+            str = ob.toString();
         }
 
         return str;
@@ -453,7 +459,8 @@ public class UnifyPayController {
                 //将生成的html写到浏览器中完成自动跳转打开银联支付页面；这里调用signData之后，将html写到浏览器跳转到银联页面之前均不能对html中的表单项的名称和值进行修改，如果修改会导致验签不通过
 
              //   resp= resp.getWriter().write(html);
-        } if ("Form02_6_4_Query".equals(interfacename)||interfacename.contains("Form02_6_4_Query")) {
+        }
+        if ("Form02_6_4_Query".equals(interfacename)||interfacename.contains("Form02_6_4_Query")) {
 
             String merId = jsonobject.getString("merId");
             String orderId = jsonobject.getString("orderId");
@@ -521,7 +528,8 @@ public class UnifyPayController {
             String rspMessage = DemoBase.genHtmlResult(rspData);
             html="交易状态查询交易</br>请求报文:<br/>"+reqMessage+"<br/>" + "应答报文:</br>"+rspMessage+"";
             spdResult.setHtml(html);
-        }if ("Form02_6_3_Refund".equals(interfacename)||interfacename.contains("Form02_6_3_Refund")){
+        }
+        if ("Form02_6_3_Refund".equals(interfacename)||interfacename.contains("Form02_6_3_Refund")){
             String origQryId = jsonobject.getString("origQryId");
             String txnAmt = jsonobject.getString("txnAmt");
 
@@ -596,7 +604,8 @@ public class UnifyPayController {
             String rspMessage = DemoBase.genHtmlResult(rspData);
             html="请求报文:<br/>"+reqMessage+"<br/>" + "应答报文:</br>"+rspMessage+"";
             spdResult.setHtml(html);
-        }if ("Form02_7_FileTransfer".equals(interfacename)|| interfacename.contains("Form02_7_FileTransfer")){
+        }
+        if ("Form02_7_FileTransfer".equals(interfacename)|| interfacename.contains("Form02_7_FileTransfer")){
 
 
             String merId = jsonobject.getString("merId");
@@ -887,6 +896,391 @@ public class UnifyPayController {
 
         return null;
     }
+
+
+
+    /***
+     * 兴业银行支付接口 网关支付 路由
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    @SuppressWarnings("static-access")
+    @RequestMapping(value = "/cibBankPayment", method = { RequestMethod.POST ,RequestMethod.GET})
+    public void cibBankPayment(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String type = request.getParameter("redirect_type");
+        if("gp_pay1".equals(type)) {// Ex.2-1 网关支付跳转1
+            String order_no;
+            try {
+                order_no = new String(request.getParameter("order_no").getBytes("ISO-8859-1"), "UTF-8");
+                String order_amount = new String(request.getParameter("order_amount").getBytes("ISO-8859-1"), "UTF-8");
+                String order_title = request.getParameter("order_title");
+                String order_desc = request.getParameter("order_desc");
+                String remote_ip = request.getRemoteAddr();
+                // 【重要】出于安全考虑，在调用函数前，需要对上面的参数进行防护过滤等操作
+                //	System.out.println(gpPay(order_no, order_amount, order_title, order_desc, remote_ip));
+                PrintWriter out=response.getWriter();
+                out.print(gpPay(order_no, order_amount, order_title, order_desc, remote_ip));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    /***
+     * 兴业银行支付接口 对账查询
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    @SuppressWarnings("static-access")
+    @RequestMapping(value = "/cibBankAccountChecking", method = { RequestMethod.POST ,RequestMethod.GET})
+    public void cibBankAccountChecking(HttpServletRequest request,HttpServletResponse response) throws IOException{
+        String type = request.getParameter("redirect_type");
+        if("check".equals(type)) {// Ex.2-1 网关支付跳转1
+            try {
+                String order_type = request.getParameter("order_type");
+                String order_date = request.getParameter("order_date");
+                // 【重要】出于安全考虑，在调用函数前，需要对上面的参数进行防护过滤等操作
+                PrintWriter out=response.getWriter();
+                out.print(dlSettleFile(order_type, order_date));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+
+
+    /**
+     * 网关支付交易跳转页面生成接口<br />
+     * 该方法将生成跳转页面的全部HTML代码，商户直接输出该HTML代码至某个URL所对应的页面中，即可实现跳转，可以参考示例epay_redirect
+     * .jsp<br />
+     * [重要]各传入参数SDK都不作任何检查、过滤，请务必在传入前进行安全检查或过滤，保证传入参数的安全性，否则会导致安全问题。
+     *
+     * @param order_no
+     *            订单号
+     * @param order_amount
+     *            金额，单位元，两位小数，例：8.00
+     * @param order_title
+     *            订单标题
+     * @param order_desc
+     *            订单描述
+     * @param remote_ip
+     *            客户端IP地址
+     * @return 跳转页面HTML代码
+     */
+    public static String gpPay(String order_no, String order_amount, String order_title, String order_desc,
+                               String remote_ip) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+        params.put("order_amount", order_amount);
+        params.put("order_title", order_title);
+        params.put("order_desc", order_desc);
+        params.put("order_ip", remote_ip);
+
+        return new GpPay().build(params);
+    }
+
+    /**
+     * 网关支付交易查询接口（查询指定日期）
+     *
+     * @param order_no
+     *            订单号
+     * @param order_date
+     *            订单日期，格式yyyyMMdd
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpQuery(String order_no, String order_date) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+        params.put("order_date", order_date);
+
+        return new GpQuery().exec(params);
+    }
+
+    /**
+     * 网关支付交易查询接口（查询当天交易）
+     *
+     * @param order_no
+     *            订单号
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpQuery(String order_no) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+
+        return new GpQuery().exec(params);
+    }
+
+    /**
+     * 网关支付退款交易接口
+     *
+     * @param order_no
+     *            待退款订单号
+     * @param order_date
+     *            订单下单日期，格式yyyyMMdd
+     * @param order_amount
+     *            退款金额（不能大于原订单金额）
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpRefund(String order_no, String order_date, String order_amount) {
+        return gpRefund(order_no, order_date, order_amount, null);
+    }
+
+    /**
+     * 网关支付退款交易接口
+     *
+     * @param order_no
+     *            待退款订单号
+     * @param order_date
+     *            订单下单日期，格式yyyyMMdd
+     * @param order_amount
+     *            退款金额（不能大于原订单金额）
+     * @param trac_no
+     *            商户跟踪号
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpRefund(String order_no, String order_date, String order_amount, String trac_no) {
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+        params.put("order_date", order_date);
+        params.put("order_amount", order_amount);
+        if (trac_no != null)
+            params.put("trac_no", trac_no);
+        return new GpRefund().exec(params);
+    }
+
+    /**
+     * 网关支付退款交易结果查询接口（查询指定日期）
+     *
+     * @param order_no
+     *            退款的订单号
+     * @param order_date
+     *            订单下单日期，格式yyyyMMdd
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpRefundQuery(String order_no, String order_date) {
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+        params.put("order_date", order_date);
+        return new GpRefundQuery().exec(params);
+    }
+
+    /**
+     * 网关支付退款交易结果查询接口（查询当天订单）
+     *
+     * @param order_no
+     *            退款的订单号
+     * @return json格式结果，返回结果包含字段请参看收付直通车代收接口文档
+     */
+    public static String gpRefundQuery(String order_no) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("order_no", order_no);
+
+        return new GpRefundQuery().exec(params);
+    }
+
+    /**
+     * 对账文件下载接口（不生成文件）
+     *
+     * @param rcpt_type
+     *            回单类型：0-快捷入账回单；1-快捷出账回单；2-快捷手续费回单；3-网关支付入账回单；4-网关支付出账回单；5-
+     *            网关支付手续费回单；6-代付入账回单；7-代付出账回单；8-代付手续费回单
+     * @param trans_date
+     *            交易日期，格式yyyyMMdd
+     * @return 当下载成功时，返回文件内容（byte[]类型）；当下载失败时，返回失败信息json字符串（String类型）
+     */
+    public static Object dlSettleFile(String rcpt_type, String trans_date) {
+        HashMap<String, String> params = new HashMap<String, String>();
+        if ("6".equals(rcpt_type)) {
+            params.put("rcpt_type", "0");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).download(params);
+        } else if ("7".equals(rcpt_type)) {
+            params.put("rcpt_type", "1");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).download(params);
+        } else if ("8".equals(rcpt_type)) {
+            params.put("rcpt_type", "2");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).download(params);
+        } else {
+            params.put("rcpt_type", rcpt_type);
+            params.put("trans_date", trans_date);
+            return new DlSettleFile().download(params);
+        }
+    }
+
+    /**
+     * 对账文件下载接口（生成文件）
+     *
+     * @param rcpt_type
+     *            回单类型：0-快捷入账回单；1-快捷出账回单；2-快捷手续费回单；3-网关支付入账回单；4-网关支付出账回单；5-
+     *            网关支付手续费回单；6-代付入账回单；7-代付出账回单；8-代付手续费回单
+     * @param trans_date
+     *            交易日期，格式yyyyMMdd
+     * @param filename
+     *            保存文件名（可带路径）
+     * @return 下载结果json字符串
+     */
+    public static String dlSettleFile(String rcpt_type, String trans_date, String filename) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        if ("6".equals(rcpt_type)) {
+            params.put("rcpt_type", "0");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).downloadToFile(params, filename);
+        } else if ("7".equals(rcpt_type)) {
+            params.put("rcpt_type", "1");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).downloadToFile(params, filename);
+        } else if ("8".equals(rcpt_type)) {
+            params.put("rcpt_type", "2");
+            params.put("trans_date", trans_date);
+            return new DlSettleFile(1).downloadToFile(params, filename);
+        } else {
+            params.put("rcpt_type", rcpt_type);
+            params.put("trans_date", trans_date);
+            return new DlSettleFile().downloadToFile(params, filename);
+        }
+    }
+
+    /**
+     * 行号文件下载接口（不生成文件）
+     *
+     * @param download_type
+     *            文件类型：01-行号文件
+     * @return 当下载成功时，返回文件内容（byte[]类型）；当下载失败时，返回失败信息json字符串（String类型）
+     */
+    public static Object dlFile(String download_type) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("download_type", download_type);
+
+        return new DlFile().download(params);
+    }
+
+    /**
+     * 行号文件下载接口（生成文件）
+     *
+     * @param download_type
+     *            文件类型：01-行号文件
+     * @param filename
+     *            保存文件名（可带路径）
+     * @return 下载结果json字符串
+     */
+    public static String dlFile(String download_type, String filename) {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("download_type", download_type);
+
+        return new DlFile().downloadToFile(params, filename);
+    }
+
+    /***
+     * 兴业银行支付接口回调接口地址
+     */
+    @RequestMapping(value = "/cibBankReturnInfo", method = { RequestMethod.POST ,RequestMethod.GET})
+    //@ResponseBody
+    public HashMap<String, Object> cibBankReturnInfo(HttpServletRequest request,HttpServletResponse response ) throws IOException, ServletException {
+        HashMap<String, Object> returnMap=new HashMap<>();
+        String method = request.getMethod();
+/*		String mac = request.getParameter("order_mac");
+		String type = request.getParameter("order_type");
+		String date = request.getParameter("order_date");
+		returnMap.put("mac", mac);
+		returnMap.put("type", type);
+		returnMap.put("date", date);*/
+        returnMap.put("status", "success");
+        returnMap.put("method", method);
+        return returnMap;
+		/*Map<String,String> params = new HashMap<String,String>();
+		Map<?, ?> reqParams = request.getParameterMap();
+		Iterator<?> iter = reqParams.keySet().iterator();
+		while (iter.hasNext()) {
+			String name = (String) iter.next();
+			String[] values = (String[]) reqParams.get(name);
+			if("get".equalsIgnoreCase(method))
+				params.put(name, new String(values[0].getBytes("ISO-8859-1"), "UTF-8"));
+			else
+				params.put(name, values[0]);
+		}
+
+		if(Signature.verifyMAC(params)) {				//验签成功
+
+			if("get".equalsIgnoreCase(method)) {			//前台通知
+
+				//商户可以在这边进行 [前台] 回调通知的业务逻辑处理
+				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
+				//前台跳转回来的通知，需要显示内容，如支付成功等
+				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
+
+					String order_no = params.get("order_no");
+					//String ... = ...
+					//商户可以从params中获取通知中的数据
+					//然后进行支付成功后的业务逻辑处理
+					PrintWriter out=response.getWriter();
+					out.println("订单" + order_no + "支付成功");
+
+				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
+
+					//支付失败业务逻辑处理
+
+				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
+
+					//退款成功业务逻辑处理
+
+				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
+
+					//认证成功业务逻辑处理
+
+				}
+
+			} else if("post".equalsIgnoreCase(method)) {	//后台通知
+
+				//商户可以在这边进行 [后台] 回调通知的业务逻辑处理
+				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
+				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
+
+					//支付成功业务逻辑处理
+
+				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
+
+					//支付失败业务逻辑处理
+
+				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
+
+					//退款成功业务逻辑处理
+
+				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
+
+					//认证成功业务逻辑处理
+
+				}
+			}
+
+		}else{									//验签失败
+
+			//不应当进行业务逻辑处理，即把该通知当无效的处理
+			//商户可以在此记录日志等
+
+		}
+
+		return returnMap;*/
+    }
+
+
+
+
+
+
 }
 
 

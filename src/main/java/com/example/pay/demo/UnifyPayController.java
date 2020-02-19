@@ -15,6 +15,7 @@ import com.example.pay.exception.MyException;
 import com.example.pay.util.DlFile;
 import com.example.pay.util.DlSettleFile;
 import com.example.pay.util.JsonUtils;
+import com.example.pay.util.Signature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -28,10 +29,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*
  * @author: chenjie
@@ -90,7 +88,104 @@ public class UnifyPayController {
         }
     }
 
-  //  @Scheduled(cron = "0/5 * * * * ?") 测试定时器
+
+    /***
+     * 兴业银行支付接口回调接口地址
+     */
+    @RequestMapping(value = "/cibBankReturnInfo", method = { RequestMethod.POST ,RequestMethod.GET})
+    @ResponseBody
+    public HashMap<String, Object> cibBankReturnInfo(HttpServletRequest request,HttpServletResponse response )throws IOException, ServletException {
+        HashMap<String, Object> returnMap=new HashMap<>();
+        String method = request.getMethod();
+		String mac = request.getParameter("order_mac");
+		String type = request.getParameter("order_type");
+		String date = request.getParameter("order_date");
+		returnMap.put("mac", mac);
+		returnMap.put("type", type);
+		returnMap.put("date", date);
+       /* returnMap.put("status", "success");
+        returnMap.put("method", method);
+        System.out.println("进入回调接口");
+        return returnMap;*/
+		Map<String,String> params = new HashMap<String,String>();
+		Map<?, ?> reqParams = request.getParameterMap();
+		Iterator<?> iter = reqParams.keySet().iterator();
+		while (iter.hasNext()) {
+			String name = (String) iter.next();
+			String[] values = (String[]) reqParams.get(name);
+			if("get".equalsIgnoreCase(method))
+				params.put(name, new String(values[0].getBytes("ISO-8859-1"), "UTF-8"));
+			else
+				params.put(name, values[0]);
+		}
+
+		if(Signature.verifyMAC(params)) {				//验签成功
+
+			if("get".equalsIgnoreCase(method)) {			//前台通知
+
+				//商户可以在这边进行 [前台] 回调通知的业务逻辑处理
+				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
+				//前台跳转回来的通知，需要显示内容，如支付成功等
+				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
+
+					String order_no = params.get("order_no");
+					//String ... = ...
+					//商户可以从params中获取通知中的数据
+					//然后进行支付成功后的业务逻辑处理
+					PrintWriter out=response.getWriter();
+					out.println("订单" + order_no + "支付成功");
+
+				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
+
+					//支付失败业务逻辑处理
+
+				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
+
+					//退款成功业务逻辑处理
+
+				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
+
+					//认证成功业务逻辑处理
+
+				}
+
+			} else if("post".equalsIgnoreCase(method)) {	//后台通知
+
+				//商户可以在这边进行 [后台] 回调通知的业务逻辑处理
+				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
+				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
+
+					//支付成功业务逻辑处理
+
+				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
+
+					//支付失败业务逻辑处理
+
+				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
+
+					//退款成功业务逻辑处理
+
+				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
+
+					//认证成功业务逻辑处理
+
+				}
+			}
+
+		}else{									//验签失败
+
+			//不应当进行业务逻辑处理，即把该通知当无效的处理
+			//商户可以在此记录日志等
+
+		}
+
+		return returnMap;
+    }
+
+
+
+
+    //  @Scheduled(cron = "0/5 * * * * ?") 测试定时器
     public void cron() {
         System.out.println(new Date());
     }
@@ -382,6 +477,7 @@ public class UnifyPayController {
             logger.info("调用兴业银行接口");
             Object ob = cibPayController.cibPay(remote_ip,Interfacename, jsonobject, Flag);
             str = ob.toString();
+            System.out.println(str);
         }
 
         return str;
@@ -1182,98 +1278,6 @@ public class UnifyPayController {
         params.put("download_type", download_type);
 
         return new DlFile().downloadToFile(params, filename);
-    }
-
-    /***
-     * 兴业银行支付接口回调接口地址
-     */
-    @RequestMapping(value = "/cibBankReturnInfo", method = { RequestMethod.POST ,RequestMethod.GET})
-    //@ResponseBody
-    public HashMap<String, Object> cibBankReturnInfo(HttpServletRequest request,HttpServletResponse response ) throws IOException, ServletException {
-        HashMap<String, Object> returnMap=new HashMap<>();
-        String method = request.getMethod();
-/*		String mac = request.getParameter("order_mac");
-		String type = request.getParameter("order_type");
-		String date = request.getParameter("order_date");
-		returnMap.put("mac", mac);
-		returnMap.put("type", type);
-		returnMap.put("date", date);*/
-        returnMap.put("status", "success");
-        returnMap.put("method", method);
-        return returnMap;
-		/*Map<String,String> params = new HashMap<String,String>();
-		Map<?, ?> reqParams = request.getParameterMap();
-		Iterator<?> iter = reqParams.keySet().iterator();
-		while (iter.hasNext()) {
-			String name = (String) iter.next();
-			String[] values = (String[]) reqParams.get(name);
-			if("get".equalsIgnoreCase(method))
-				params.put(name, new String(values[0].getBytes("ISO-8859-1"), "UTF-8"));
-			else
-				params.put(name, values[0]);
-		}
-
-		if(Signature.verifyMAC(params)) {				//验签成功
-
-			if("get".equalsIgnoreCase(method)) {			//前台通知
-
-				//商户可以在这边进行 [前台] 回调通知的业务逻辑处理
-				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
-				//前台跳转回来的通知，需要显示内容，如支付成功等
-				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
-
-					String order_no = params.get("order_no");
-					//String ... = ...
-					//商户可以从params中获取通知中的数据
-					//然后进行支付成功后的业务逻辑处理
-					PrintWriter out=response.getWriter();
-					out.println("订单" + order_no + "支付成功");
-
-				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
-
-					//支付失败业务逻辑处理
-
-				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
-
-					//退款成功业务逻辑处理
-
-				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
-
-					//认证成功业务逻辑处理
-
-				}
-
-			} else if("post".equalsIgnoreCase(method)) {	//后台通知
-
-				//商户可以在这边进行 [后台] 回调通知的业务逻辑处理
-				//注意：后台通知和前台通知有可能同时到来，注意 [需要防止重复处理]
-				if("NOTIFY_ACQUIRE_SUCCESS".equalsIgnoreCase(params.get("event"))) {		//支付成功通知
-
-					//支付成功业务逻辑处理
-
-				} else if("NOTIFY_ACQUIRE_FAIL".equalsIgnoreCase(params.get("event")))	{	//支付失败通知
-
-					//支付失败业务逻辑处理
-
-				} else if("NOTIFY_REFUND_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//退款成功通知
-
-					//退款成功业务逻辑处理
-
-				} else if("NOTIFY_AUTH_SUCCESS".equalsIgnoreCase(params.get("event"))) {	//快捷支付认证成功通知
-
-					//认证成功业务逻辑处理
-
-				}
-			}
-
-		}else{									//验签失败
-
-			//不应当进行业务逻辑处理，即把该通知当无效的处理
-			//商户可以在此记录日志等
-
-		}
-
-		return returnMap;*/
     }
 
 

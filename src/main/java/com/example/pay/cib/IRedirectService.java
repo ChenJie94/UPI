@@ -41,7 +41,7 @@ public abstract class IRedirectService {
             html.append("<input type=\"hidden\" name=\"" + entry.getKey() + "\" value=\"" + entry.getValue() + "\"/>");
         }
 
-        html.append("<input type=\"submit\" value=\"submit\" style=\"display:none;\"></form>");
+      //  html.append("<input type=\"submit\" value=\"submit\"></form>");
         html.append("<script>document.forms['epayredirect'].submit();</script>");
 
         return html.toString();

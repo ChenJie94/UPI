@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 
 /**
@@ -39,6 +40,7 @@ import java.util.HashMap;
  */
 public class CibPayController {
     protected static Logger logger = LoggerFactory.getLogger(CibPayController.class);
+    private HttpServletResponse response;
     public Object cibPay(String remote_ip,String interfacename, JSONObject jsonobject, String flag) throws  Exception{
         String urlStr = "";
         String returnHtml = "";
